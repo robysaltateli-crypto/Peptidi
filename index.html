@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peptidi - Tracker con Promemoria</title>
+<style>
+  :root{
+    --bg:#0f1420;--card:#1a2233;--card2:#232d42;--accent:#4ade80;
+    --accent2:#38bdf8;--danger:#f87171;--warn:#fbbf24;--text:#e6edf7;
+    --muted:#8a9bb5;--border:#2c3852;--mattina:#fbbf24;--sera:#a78bfa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);padding:14px;padding-bottom:80px;
+    max-width:600px;margin:auto;min-height:100vh}
+  h1{font-size:1.4rem;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:.8rem;margin-bottom:14px}
+  .tabs{display:flex;gap:3px;margin-bottom:14px;flex-wrap:wrap}
+  .tabs button{flex:1;min-width:44px;padding:8px 2px;background:var(--card);color:var(--muted);
+    border:1px solid var(--border);border-radius:8px;font-size:.65rem;cursor:pointer;font-weight:500}
+  .tabs button.active{background:var(--accent);color:#04140a;border-color:var(--accent)}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)}
+  input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);
+    background:var(--card2);color:var(--text);font-size:.95rem;font-family:inherit;margin-bottom:8px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  button{background:var(--accent);color:#04140a;border:none;padding:11px;border-radius:8px;
+    font-weight:600;font-size:.9rem;cursor:pointer;width:100%;transition:opacity .2s}
+  button:hover{opacity:.85}
+  button.sec{background:var(--card2);color:var(--text);border:1px solid var(--border)}
+  button.danger{background:var(--danger);color:#fff}
+  button.warn{background:var(--warn);color:#1a1200}
+  button.small{padding:7px;font-size:.78rem;margin:0}
+  .pep-item{background:var(--card2);border-radius:10px;padding:11px;margin-bottom:8px;
+    border-left:3px solid var(--accent2);cursor:pointer;text-decoration:none;color:inherit;display:block}
+  .pep-item:hover{background:#2a3548}
+  .pep-item .name{font-weight:600;color:var(--accent);font-size:.95rem}
+  .pep-item .short{font-size:.78rem;color:var(--muted);margin-top:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{font-size:.65rem;background:var(--accent);color:#04140a;
+    padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:600}
+  .badge.frigo{background:var(--accent2);color:#001018}
+  .badge.warn{background:var(--warn);color:#1a1200}
+  .badge.exp{background:var(--danger);color:#fff}
+  .empty{text-align:center;color:var(--muted);padding:20px;font-size:.9rem}
+  .tag{display:inline-block;background:var(--card2);border:1px solid var(--border);
+    color:var(--accent2);font-size:.7rem;padding:2px 8px;border-radius:10px;margin:2px 3px 2px 0}
+  .detail h2{color:var(--accent);font-size:1.05rem;margin-bottom:8px}
+  .detail h3{color:var(--accent2);font-size:.8rem;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.5px}
+  .detail p{font-size:.88rem;line-height:1.5;color:var(--text)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;
+    align-items:flex-start;justify-content:center;padding:14px;z-index:100;overflow-y:auto}
+  .modal.show{display:flex}
+  .modal-box{background:var(--card);border-radius:14px;padding:18px;max-width:560px;
+    width:100%;margin-top:20px;margin-bottom:20px;border:1px solid var(--border);position:relative}
+  .modal-box .close{position:absolute;top:12px;right:12px;background:var(--card2);color:var(--text);
+    border:1px solid var(--border);border-radius:50%;width:34px;height:34px;padding:0;
+    font-size:1rem;cursor:pointer;font-weight:600;z-index:1}
+  .inv-item{background:var(--card2);border-radius:10px;padding:11px;margin-bottom:10px;
+    border-left:3px solid var(--accent)}
+  .inv-item.frigo{border-left-color:var(--accent2)}
+  .inv-item.warn{border-left-color:var(--warn)}
+  .inv-item.exp{border-left-color:var(--danger)}
+  .inv-item .name{font-weight:600;color:var(--accent);font-size:.95rem;display:flex;
+    justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+  .inv-item .info{font-size:.8rem;color:var(--muted);margin-top:6px;line-height:1.55}
+  .inv-item .info b{color:var(--text)}
+  .inv-item .actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .inv-item .actions button{flex:1;min-width:60px}
+  .disc{background:#3a2a1a;border:1px solid #6b4a2a;color:#f0c896;font-size:.75rem;
+    padding:10px;border-radius:8px;margin-bottom:12px;line-height:1.4}
+  label{display:block;font-size:.78rem;color:var(--muted);margin:8px 0 4px}
+  .toolbar{display:flex;gap:6px;margin-bottom:10px}
+  .toolbar button{flex:1;padding:9px;font-size:.82rem}
+  .progress{height:6px;background:var(--card);border-radius:3px;overflow:hidden;margin-top:8px}
+  .progress>div{height:100%;background:var(--accent);transition:width .3s}
+  .progress.warn>div{background:var(--warn)}
+  .progress.exp>div{background:var(--danger)}
+  .hint{font-size:.72rem;color:var(--muted);margin-top:4px;font-style:italic}
+  .dose-item{background:var(--card2);border-radius:10px;padding:10px;margin-bottom:8px;
+    border-left:3px solid var(--accent)}
+  .dose-item .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px}
+  .dose-item .name{font-weight:600;color:var(--accent);font-size:.92rem}
+  .dose-item .when{font-size:.72rem;color:var(--muted)}
+  .dose-item .detail{font-size:.82rem;color:var(--text);line-height:1.5}
+  .dose-item .actions{display:flex;gap:6px;margin-top:6px}
+  .dose-item .actions button{flex:1;padding:6px;font-size:.75rem}
+  .preview{background:var(--card);border:1px solid var(--accent2);border-radius:8px;
+    padding:10px;margin:10px 0;font-size:.82rem;line-height:1.6;display:none}
+  .preview.show{display:block}
+  .preview b{color:var(--accent2)}
+  .calc-modes{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap}
+  .calc-modes button{flex:1;min-width:70px;padding:8px 4px;font-size:.72rem;
+    background:var(--card2);color:var(--muted);border:1px solid var(--border)}
+  .calc-modes button.active{background:var(--accent2);color:#001018;border-color:var(--accent2)}
+  .calc-result{background:var(--card);border:1px solid var(--accent);border-radius:10px;
+    padding:12px;margin-top:12px;font-size:.88rem;line-height:1.7;display:none}
+  .calc-result.show{display:block}
+  .calc-result .big{font-size:1.15rem;color:var(--accent);font-weight:700}
+  .calc-result .row{display:flex;justify-content:space-between;padding:5px 0;
+    border-bottom:1px solid var(--border)}
+  .calc-result .row:last-child{border-bottom:none}
+  .calc-result .row span:last-child{color:var(--accent);font-weight:600}
+  .reminder{background:linear-gradient(135deg,#1a2233,#232d42);border:2px solid var(--accent);
+    border-radius:12px;padding:14px;margin-bottom:14px;display:none}
+  .reminder.show{display:block}
+  .reminder h3{color:var(--accent);font-size:1rem;margin-bottom:10px}
+  .reminder .fascia{margin-bottom:12px}
+  .reminder .fascia-title{font-size:.85rem;font-weight:600;margin-bottom:6px}
+  .reminder .fascia-title.mattina{color:var(--mattina)}
+  .reminder .fascia-title.sera{color:var(--sera)}
+  .reminder .fascia-title.pome{color:var(--accent2)}
+  .reminder .dose-row{background:var(--card);border-radius:8px;padding:8px;margin-bottom:6px;
+    display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .reminder .dose-row.done{opacity:.5;text-decoration:line-through}
+  .reminder .dose-row .info{flex:1;min-width:150px}
+  .reminder .dose-row .nome{font-weight:600;font-size:.88rem;color:var(--text)}
+  .reminder .dose-row .dose{font-size:.75rem;color:var(--muted)}
+  .reminder .dose-row button{padding:6px 10px;font-size:.75rem;width:auto;flex:0 0 auto}
+  .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;
+    align-items:center;justify-content:center;padding:14px;z-index:200}
+  .popup-overlay.show{display:flex}
+  .popup{background:var(--card);border-radius:14px;padding:20px;max-width:500px;width:100%;
+    border:2px solid var(--accent);max-height:85vh;overflow-y:auto}
+  .popup h2{color:var(--accent);font-size:1.1rem;margin-bottom:12px;text-align:center}
+</style>
+</head>
+<body>
+
+<h1>💉 Peptidi</h1>
+<p class="sub">Tracker con Promemoria</p>
+
+<div class="disc">⚠️ App informativa. Le info vanno verificate con un medico.</div>
+
+<div class="reminder" id="reminderBanner"></div>
+
+<div class="tabs">
+  <button class="active" id="tabDb" onclick="showTab('db')">📚 DB</button>
+  <button id="tabInv" onclick="showTab('inv')">📦 Mag</button>
+  <button id="tabFr" onclick="showTab('fr')">❄️ Frigo</button>
+  <button id="tabDosi" onclick="showTab('dosi')">💉 Dosi</button>
+  <button id="tabProg" onclick="showTab('prog')">⏰ Prog</button>
+  <button id="tabCalc" onclick="showTab('calc')">🧮</button>
+  <button id="tabScienza" onclick="showTab('scienza')">🔬</button>
+  <button id="tabBk" onclick="showTab('bk')">💾</button>
+</div>
+
+<div id="viewDb">
+  <div class="toolbar">
+    <button class="sec small" onclick="openAddPeptide()">➕ Aggiungi</button>
+    <button class="sec small" onclick="showMyOnly()" id="btnMine">👤 Solo i miei</button>
+  </div>
+  <div class="card">
+    <input id="search" placeholder="🔍 Cerca peptide, categoria o indicazione..." oninput="renderDb()">
+  </div>
+  <div id="dbList"></div>
+</div>
+
+<div id="viewInv" style="display:none"><div id="invList"></div></div>
+<div id="viewFr" style="display:none"><div id="frList"></div></div>
+<div id="viewDosi" style="display:none"><div id="dosiList"></div></div>
+
+<div id="viewProg" style="display:none">
+  <div class="card">
+    <h3 style="color:var(--accent);margin-bottom:10px">⏰ Programmazione</h3>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">
+      Imposta quando e quanto assumere ogni peptide.
+    </p>
+    <button onclick="openAddProg()">➕ Nuova programmazione</button>
+  </div>
+  <div id="progList"></div>
+</div>
+
+<div id="viewCalc" style="display:none">
+  <div class="calc-modes">
+    <button class="active" onclick="showCalcMode('ricost',this)">🧪 Ricost.</button>
+    <button onclick="showCalcMode('converti',this)">🔄 Converti</button>
+    <button onclick="showCalcMode('dosi',this)">💧 Dosi</button>
+    <button onclick="showCalcMode('volume',this)">💉 Volume</button>
+  </div>
+  <div id="calcRicost" class="card">
+    <h3 style="color:var(--accent);margin-bottom:10px">🧪 Ricostituzione</h3>
+    <label>Quantità peptide (mg)</label>
+    <input id="cr_mg" type="number" step="0.01" placeholder="es. 5" oninput="calcRicost()">
+    <label>Acqua batteriostatica (ml)</label>
+    <input id="cr_ml" type="number" step="0.01" placeholder="es. 2" oninput="calcRicost()">
+    <label>Dose desiderata (mcg)</label>
+    <input id="cr_dose" type="number" step="0.01" placeholder="es. 250" oninput="calcRicost()">
+    <label>Tipo siringa</label>
+    <select id="cr_syr" onchange="calcRicost()">
+      <option value="100">U-100</option><option value="40">U-40</option><option value="50">U-50</option>
+    </select>
+    <div class="calc-result" id="cr_res"></div>
+  </div>
+  <div id="calcConverti" class="card" style="display:none">
+    <h3 style="color:var(--accent);margin-bottom:10px">🔄 Conversione</h3>
+    <label>Valore</label>
+    <input id="cv_val" type="number" step="0.001" placeholder="es. 500" oninput="calcConverti()">
+    <label>Da</label>
+    <select id="cv_from" onchange="calcConverti()">
+      <option value="mcg">mcg</option><option value="mg">mg</option>
+      <option value="g">g</option><option value="ml">ml (richiede concentrazione)</option>
+    </select>
+    <label>Concentrazione (mcg/ml)</label>
+    <input id="cv_conc" type="number" step="0.01" placeholder="es. 2500" oninput="calcConverti()">
+    <div class="calc-result" id="cv_res"></div>
+  </div>
+  <div id="calcDosi" class="card" style="display:none">
+    <h3 style="color:var(--accent);margin-bottom:10px">💧 Dosi da fiala</h3>
+    <label>Quantità totale peptide (mg)</label>
+    <input id="cd_mg" type="number" step="0.01" placeholder="es. 5" oninput="calcDosi()">
+    <label>Dose per somministrazione (mcg)</label>
+    <input id="cd_dose" type="number" step="0.01" placeholder="es. 250" oninput="calcDosi()">
+    <label>Frequenza (dosi/giorno)</label>
+    <input id="cd_freq" type="number" step="0.1" placeholder="es. 1" value="1" oninput="calcDosi()">
+    <div class="calc-result" id="cd_res"></div>
+  </div>
+  <div id="calcVolume" class="card" style="display:none">
+    <h3 style="color:var(--accent);margin-bottom:10px">💉 Volume da iniettare</h3>
+    <label>Concentrazione (mcg/ml)</label>
+    <input id="cvol_conc" type="number" step="0.01" placeholder="es. 2500" oninput="calcVolume()">
+    <label>Dose (mcg)</label>
+    <input id="cvol_dose" type="number" step="0.01" placeholder="es. 250" oninput="calcVolume()">
+    <label>Tipo siringa</label>
+    <select id="cvol_syr" onchange="calcVolume()">
+      <option value="100">U-100</option><option value="40">U-40</option><option value="50">U-50</option>
+    </select>
+    <div class="calc-result" id="cvol_res"></div>
+  </div>
+</div>
+
+<div id="viewScienza" style="display:none">
+  <div class="card">
+    <h3 style="color:var(--accent);margin-bottom:10px">🔬 Ricerca su PubMed</h3>
+    <label>Cerca per peptide</label>
+    <input id="sci_pep" placeholder="es. BPC-157" list="sci_pep_list">
+    <datalist id="sci_pep_list"></datalist>
+    <label>Oppure per patologia</label>
+    <input id="sci_path" placeholder="es. tendinopatia, obesità">
+    <button onclick="searchPubMed()">🔍 Cerca su PubMed</button>
+    <button class="sec" style="margin-top:6px" onclick="openScholar()">🔗 Google Scholar</button>
+    <p class="hint" style="margin-top:8px">💡 In Chrome: ⋮ → Traduci</p>
+  </div>
+  <div id="sci_results"></div>
+</div>
+
+<div id="viewBk" style="display:none">
+  <div class="card">
+    <h3 style="color:var(--accent);margin-bottom:10px">💾 Backup</h3>
+    <button onclick="exportData()">📤 Esporta</button>
+    <label style="margin-top:14px">Importa:</label>
+    <textarea id="importArea" rows="4" placeholder="JSON..."></textarea>
+    <button class="sec" onclick="importData()">📥 Importa</button>
+  </div>
+</div>
+
+<div class="modal" id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<div class="popup-overlay" id="popupOverlay">
+  <div class="popup" id="popupBox"></div>
+</div>
+
+<script>
+const DB_BUILTIN = [
+  {id:'bpc157',name:'BPC-157',cat:'Riparazione',desc:'Peptide sintetico.',dose:'250-500 mcg 1-2/die',when:'A digiuno',route:'SUBCUTANEA',ind:'Lesioni tendinee',note:''},
+  {id:'tb500',name:'TB-500',cat:'Riparazione',desc:'Timosina beta-4.',dose:'2-2.5 mg 2/set',when:'A digiuno',route:'SUBCUTANEA',ind:'Recupero',note:''},
+  {id:'ghkcu',name:'GHK-Cu',cat:'Riparazione',desc:'Peptide rameico.',dose:'1-2 mg/die',when:'Indifferente',route:'TOPICA',ind:'Rughe, capelli',note:''},
+  {id:'kpv',name:'KPV',cat:'Riparazione',desc:'Antinfiammatorio.',dose:'200-500 mcg/die',when:'Indifferente',route:'ORALE',ind:'Intestino',note:''},
+  {id:'ll37',name:'LL-37',cat:'Riparazione',desc:'Antimicrobico.',dose:'100-500 mcg',when:'Indifferente',route:'SUBCUTANEA',ind:'Infezioni',note:''},
+  {id:'ipamorelin',name:'Ipamorelin',cat:'GH',desc:'Segretagogo GH.',dose:'200-300 mcg',when:'A digiuno',route:'SUBCUTANEA',ind:'Recupero',note:''},
+  {id:'cjc1295',name:'CJC-1295',cat:'GH',desc:'GHRH analogo.',dose:'100-200 mcg',when:'Pre-sonno',route:'SUBCUTANEA',ind:'Recupero',note:''},
+  {id:'sermorelin',name:'Sermorelin',cat:'GH',desc:'GHRH.',dose:'200-300 mcg',when:'Pre-sonno',route:'SUBCUTANEA',ind:'Deficit GH',note:''},
+  {id:'tesamorelin',name:'Tesamorelin',cat:'GH',desc:'GHRH.',dose:'1-2 mg',when:'Sera',route:'SUBCUTANEA',ind:'Grasso viscerale',note:''},
+  {id:'ghrp2',name:'GHRP-2',cat:'GH',desc:'Segretagogo.',dose:'100-300 mcg',when:'A digiuno',route:'SUBCUTANEA',ind:'GH',note:''},
+  {id:'ghrp6',name:'GHRP-6',cat:'GH',desc:'Segretagogo.',dose:'100-300 mcg',when:'A digiuno',route:'SUBCUTANEA',ind:'GH',note:''},
+  {id:'mk677',name:'MK-677',cat:'GH',desc:'Segretagogo orale.',dose:'10-25 mg',when:'Sera',route:'ORALE',ind:'GH',note:''},
+  {id:'igf1lr3',name:'IGF-1 LR3',cat:'GH',desc:'IGF-1.',dose:'20-80 mcg',when:'Post-workout',route:'SUBCUTANEA',ind:'Ipertrofia',note:''},
+  {id:'somatropin',name:'Somatropin (HGH)',cat:'GH',desc:'HGH.',dose:'1-4 UI',when:'Pre-sonno',route:'SUBCUTANEA',ind:'Deficit GH',note:''},
+  {id:'semaglutide',name:'Semaglutide',cat:'Metabolico',desc:'GLP-1.',dose:'0.25-2.4 mg/set',when:'Settimanale',route:'SUBCUTANEA',ind:'Obesità',note:''},
+  {id:'tirzepatide',name:'Tirzepatide',cat:'Metabolico',desc:'GIP/GLP-1.',dose:'2.5-15 mg/set',when:'Settimanale',route:'SUBCUTANEA',ind:'Obesità',note:''},
+  {id:'retatrutide',name:'Retatrutide',cat:'Metabolico',desc:'Triplo.',dose:'Sperimentale',when:'Settimanale',route:'SUBCUTANEA',ind:'Obesità',note:''},
+  {id:'liraglutide',name:'Liraglutide',cat:'Metabolico',desc:'GLP-1.',dose:'0.6-3 mg',when:'Stesso orario',route:'SUBCUTANEA',ind:'Diabete',note:''},
+  {id:'aod9604',name:'AOD-9604',cat:'Metabolico',desc:'HGH frammento.',dose:'300-500 mcg',when:'Mattina',route:'SUBCUTANEA',ind:'Grasso',note:''},
+  {id:'semax',name:'Semax',cat:'Cognitivo',desc:'Nootropico.',dose:'300-600 mcg',when:'Mattina',route:'NASALE',ind:'Focus',note:''},
+  {id:'selank',name:'Selank',cat:'Cognitivo',desc:'Ansiolitico.',dose:'250-500 mcg',when:'Mattina',route:'NASALE',ind:'Ansia',note:''},
+  {id:'dihexa',name:'Dihexa',cat:'Cognitivo',desc:'Nootropico.',dose:'5-20 mg',when:'Mattina',route:'ORALE',ind:'Memoria',note:''},
+  {id:'epitalon',name:'Epitalon',cat:'Longevità',desc:'Tetrapeptide.',dose:'5-10 mg',when:'Sera',route:'SUBCUTANEA',ind:'Longevità',note:''},
+  {id:'motsc',name:'MOTS-c',cat:'Longevità',desc:'Mitocondriale.',dose:'5-10 mg',when:'Mattina',route:'SUBCUTANEA',ind:'Metabolismo',note:''},
+  {id:'dsip',name:'DSIP',cat:'Sonno',desc:'Peptide delta.',dose:'100-300 mcg',when:'Pre-sonno',route:'SUBCUTANEA',ind:'Insonnia',note:''},
+  {id:'pt141',name:'PT-141',cat:'Sessuale',desc:'Melanocortina.',dose:'1-2 mg',when:'Al bisogno',route:'SUBCUTANEA',ind:'Libido',note:''},
+  {id:'melanotan2',name:'Melanotan II',cat:'Sessuale',desc:'Melanocita.',dose:'0.5-1 mg',when:'Pre-sole',route:'SUBCUTANEA',ind:'Abbronzatura',note:''},
+  {id:'thymosina1',name:'Thymosin Alpha-1',cat:'Immunità',desc:'Immunomodulante.',dose:'1.6 mg 2/set',when:'Mattina',route:'SUBCUTANEA',ind:'Immunità',note:''},
+  {id:'ghkcu2',name:'GHK-Cu topico',cat:'Cosmetico',desc:'Peptide rameico.',dose:'Topico',when:'Indifferente',route:'TOPICA',ind:'Pelle',note:''},
+  {id:'matrixyl',name:'Matrixyl',cat:'Cosmetico',desc:'Peptide cosmetico.',dose:'Topico',when:'Indifferente',route:'TOPICA',ind:'Rughe',note:''}
+];
+
+const K_CUSTOM='pep_custom';
+const K_INV='pep_inventory';
+const K_FRIDGE='pep_fridge';
+const K_DOSI='pep_dosi';
+const K_PROG='pep_prog';
+const K_DOSI_OGGI='pep_dosi_oggi';
+
+const getCustom=()=>{try{return JSON.parse(localStorage.getItem(K_CUSTOM))||[]}catch(e){return[]}};
+const setCustom=d=>localStorage.setItem(K_CUSTOM,JSON.stringify(d));
+const getInv=()=>{try{return JSON.parse(localStorage.getItem(K_INV))||[]}catch(e){return[]}};
+const setInv=d=>localStorage.setItem(K_INV,JSON.stringify(d));
+const getFr=()=>{try{return JSON.parse(localStorage.getItem(K_FRIDGE))||[]}catch(e){return[]}};
+const setFr=d=>localStorage.setItem(K_FRIDGE,JSON.stringify(d));
+const getDosi=()=>{try{return JSON.parse(localStorage.getItem(K_DOSI))||[]}catch(e){return[]}};
+const setDosi=d=>localStorage.setItem(K_DOSI,JSON.stringify(d));
+const getProg=()=>{try{return JSON.parse(localStorage.getItem(K_PROG))||[]}catch(e){return[]}};
+const setProg=d=>localStorage.setItem(K_PROG,JSON.stringify(d));
+const getDosiOggi=()=>{try{return JSON.parse(localStorage.getItem(K_DOSI_OGGI))||{}}catch(e){return{}}};
+const setDosiOggi=d=>localStorage.setItem(K_DOSI_OGGI,JSON.stringify(d));
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function getDB(){return [...DB_BUILTIN, ...getCustom()]}
+function oggiStr(){const d=new Date();return d.toISOString().slice(0,10)}
+
+function openInChrome(url){
+  try{
+    var w = window.open(url, '_blank');
+    if(!w || w.closed || typeof w.closed === 'undefined'){
+      window.location.href = url;
+    }
+  }catch(e){
+    window.location.href = url;
+  }
+}
+
+let filterMyOnly=false;
+
+function showTab(t){
+  ['db','inv','fr','dosi','prog','calc','scienza','bk'].forEach(x=>{
+    const btn=document.getElementById('tab'+x.charAt(0).toUpperCase()+x.slice(1));
+    const view=document.getElementById('view'+x.charAt(0).toUpperCase()+x.slice(1));
+    if(btn) btn.classList.toggle('active',x===t);
+    if(view) view.style.display=x===t?'block':'none';
+  });
+  if(t==='inv') renderInv();
+  if(t==='fr') renderFr();
+  if(t==='dosi') renderDosi();
+  if(t==='prog') renderProg();
+  if(t==='db') renderDb();
+  if(t==='scienza') fillSciPepList();
+}
+
+function showMyOnly(){
+  filterMyOnly=!filterMyOnly;
+  document.getElementById('btnMine').textContent = filterMyOnly ? '👤 Tutti' : '👤 Solo i miei';
+  renderDb();
+}
+
+function renderDb(){
+  const q=document.getElementById('search').value.toLowerCase().trim();
+  const customIds=getCustom().map(c=>c.id);
+  let list=getDB();
+  if(filterMyOnly) list=list.filter(p=>customIds.includes(p.id));
+  const filtered=list.filter(p=>
+    !q || p.name.toLowerCase().includes(q) ||
+    (p.ind||'').toLowerCase().includes(q) ||
+    (p.cat||'').toLowerCase().includes(q)
+  );
+  const el=document.getElementById('dbList');
+  if(!filtered.length){el.innerHTML='<div class="empty">Nessun peptide trovato.</div>';return;}
+  el.innerHTML=filtered.map(p=>{
+    const isCustom=customIds.includes(p.id);
+    return `<div class="pep-item" onclick="openDetail('${p.id}')">
+      <div class="name">${esc(p.name)}${isCustom?'<span class="badge">MIO</span>':''}</div>
+      <div class="short">${esc(p.cat||'')} • ${esc((p.ind||'').split(',')[0])}</div>
+    </div>`;
+  }).join('');
+}
+
+function openDetail(id){
+  const p=getDB().find(x=>x.id===id);
+  if(!p) return;
+  const isCustom=getCustom().some(c=>c.id===id);
+  document.getElementById('modalBox').innerHTML=`
+    <button class="close" onclick="closeModal()">✕</button>
+    <div class="detail">
+      <h2>${esc(p.name)}${isCustom?' <span class="badge">MIO</span>':''}</h2>
+      ${p.cat?`<span class="tag">${esc(p.cat)}</span>`:''}
+      ${p.desc?`<h3>Descrizione</h3><p>${esc(p.desc)}</p>`:''}
+      ${p.dose?`<h3>Posologia</h3><p>${esc(p.dose)}</p>`:''}
+      ${p.when?`<h3>Quando</h3><p>${esc(p.when)}</p>`:''}
+      ${p.route?`<h3>Via</h3><p>${esc(p.route)}</p>`:''}
+      ${p.ind?`<h3>Indicazioni</h3><p>${esc(p.ind)}</p>`:''}
+      <button style="margin-top:16px" onclick="addToInv('${p.id}')">➕ Aggiungi al magazzino</button>
+      <button class="sec" style="margin-top:8px" onclick="searchFromDetail('${esc(p.name)}')">🔬 Cerca su PubMed</button>
+      ${isCustom?`<button class="danger" style="margin-top:8px" onclick="deleteCustom('${p.id}')">🗑️ Elimina</button>`:''}
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+
+function searchFromDetail(name){
+  closeModal();
+  showTab('scienza');
+  document.getElementById('sci_pep').value=name;
+  document.getElementById('sci_path').value='';
+  searchPubMed();
+}
+
+function openAddPeptide(){
+  document.getElementById('modalBox').innerHTML=`
+    <button class="close" onclick="closeModal()">✕</button>
+    <div class="detail">
+      <h2>➕ Nuovo peptide</h2>
+      <label>Nome *</label><input id="np_name">
+      <label>Categoria</label><input id="np_cat">
+      <label>Descrizione</label><textarea id="np_desc" rows="2"></textarea>
+      <label>Posologia</label><input id="np_dose">
+      <label>Quando</label><input id="np_when">
+      <label>Via</label><input id="np_route">
+      <label>Indicazioni</label><textarea id="np_ind" rows="2"></textarea>
+      <button style="margin-top:14px" onclick="saveCustom()">💾 Salva</button>
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+function saveCustom(){
+  const name=document.getElementById('np_name').value.trim();
+  if(!name){alert('Inserisci il nome');return;}
+  const custom=getCustom();
+  custom.push({
+    id:'custom_'+uid(),name:name,
+    cat:document.getElementById('np_cat').value.trim(),
+    desc:document.getElementById('np_desc').value.trim(),
+    dose:document.getElementById('np_dose').value.trim(),
+    when:document.getElementById('np_when').value.trim(),
+    route:document.getElementById('np_route').value.trim(),
+    ind:document.getElementById('np_ind').value.trim(),
+    note:''
+  });
+  setCustom(custom);closeModal();renderDb();
+  alert('✅ Peptide aggiunto.');
+}
+
+function deleteCustom(id){
+  if(!confirm('Eliminare questo peptide?')) return;
+  setCustom(getCustom().filter(c=>c.id!==id));closeModal();renderDb();
+}
+
+function addToInv(dbId){
+  const p=getDB().find(x=>x.id===dbId);
+  if(!p) return;
+  const qty=prompt(`Quante fiale di ${p.name}?`,'1');
+  if(qty===null) return;
+  const n=parseInt(qty);
+  if(!n||n<1){alert('Quantità non valida');return;}
+  const inv=getInv();
+  const existing=inv.find(x=>x.dbId===dbId && x.state==='secco');
+  if(existing){existing.qty+=n;}
+  else{inv.push({id:uid(),dbId:dbId,name:p.name,qty:n,state:'secco',addedAt:new Date().toISOString(),notes:''});}
+  setInv(inv);closeModal();showTab('inv');
+  alert(`✅ ${n} fiale di ${p.name} aggiunte.`);
+}
+
+function renderInv(){
+  const inv=getInv();
+  const el=document.getElementById('invList');
+  if(!inv.length){el.innerHTML='<div class="empty">Magazzino vuoto.</div>';return;}
+  const order={secco:0,ricostituito:1,finito:2};
+  inv.sort((a,b)=>(order[a.state]-order[b.state])||a.name.localeCompare(b.name));
+  el.innerHTML=inv.map(x=>{
+    const label=x.state==='secco'?'🧊 Secco':x.state==='ricostituito'?'❄️ Frigo':'✅ Finito';
+    const data=new Date(x.addedAt).toLocaleDateString('it-IT');
+    const canRecon=x.state==='secco';
+    return `<div class="inv-item">
+      <div class="name">${esc(x.name)}</div>
+      <div class="info">${label} • Fiale: <b>${x.qty}</b> • ${data}${x.notes?'<br>📝 '+esc(x.notes):''}</div>
+      <div class="actions">
+        ${canRecon?`<button class="sec small" onclick="openRecon('${x.id}')">🧪 Ricost.</button>`:''}
+        <button class="sec small" onclick="editNotes('${x.id}')">✏️</button>
+        <button class="danger small" onclick="removeInv('${x.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editNotes(id){
+  const inv=getInv();const x=inv.find(i=>i.id===id);if(!x) return;
+  const n=prompt('Note:',x.notes||'');if(n===null) return;
+  x.notes=n;setInv(inv);renderInv();
+}
+function removeInv(id){
+  const inv=getInv();const x=inv.find(i=>i.id===id);if(!x) return;
+  if(!confirm(`Eliminare ${x.name}?`)) return;
+  setInv(inv.filter(i=>i.id!==id));renderInv();
+}
+
+function openRecon(invId){
+  const inv=getInv();const x=inv.find(i=>i.id===invId);if(!x) return;
+  const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
+  const todayStr=today.toISOString().slice(0,10);
+  document.getElementById('modalBox').innerHTML=`
+    <button class="close" onclick="closeModal()">✕</button>
+    <div class="detail">
+      <h2>🧪 Ricostituisci ${esc(x.name)}</h2>
+      <label>Quantità peptide (mg) *</label><input id="rec_mg" type="number" step="0.01" placeholder="es. 5">
+      <label>Acqua batteriostatica (ml) *</label><input id="rec_ml" type="number" step="0.01" placeholder="es. 2">
+      <label>Quante fiale</label><input id="rec_qty" type="number" value="1" min="1">
+      <label>Data *</label><input id="rec_date" type="date" value="${todayStr}">
+      <label>Validità (giorni) *</label><input id="rec_days" type="number" value="30" min="1">
+      <label>Note</label><textarea id="rec_note" rows="2"></textarea>
+      <button style="margin-top:14px" onclick="saveRecon('${invId}')">❄️ Metti in frigo</button>
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+function saveRecon(invId){
+  const inv=getInv();const x=inv.find(i=>i.id===invId);if(!x) return;
+  const mg=parseFloat(document.getElementById('rec_mg').value);
+  const ml=parseFloat(document.getElementById('rec_ml').value);
+  const qty=parseInt(document.getElementById('rec_qty').value)||1;
+  const dateStr=document.getElementById('rec_date').value;
+  const days=parseInt(document.getElementById('rec_days').value)||30;
+  const note=document.getElementById('rec_note').value.trim();
+  if(!mg||mg<=0){alert('mg non validi');return;}
+  if(!ml||ml<=0){alert('ml non validi');return;}
+  if(!dateStr){alert('Data mancante');return;}
+  if(qty>x.qty){alert('Non hai abbastanza fiale');return;}
+  const totalMcg=mg*1000;
+  const concMcgPerMl=totalMcg/ml;
+  const reconDate=new Date(dateStr);
+  const expDate=new Date(reconDate);expDate.setDate(expDate.getDate()+days);
+  const fr=getFr();
+  fr.push({
+    id:uid(),dbId:x.dbId,name:x.name,qtyVials:qty,mgPerVial:mg,mlAdded:ml,
+    totalMcg:totalMcg,remainingMcg:totalMcg,concMcgPerMl:concMcgPerMl,
+    reconDate:reconDate.toISOString(),expDate:expDate.toISOString(),
+    validityDays:days,notes:note,createdAt:new Date().toISOString()
+  });
+  setFr(fr);
+  x.qty-=qty;
+  if(x.qty<=0){setInv(inv.filter(i=>i.id!==invId));}else{setInv(inv);}
+  closeModal();showTab('fr');
+  alert('❄️ In frigo!');
+}
+
+function renderFr(){
+  const fr=getFr();
+  const el=document.getElementById('frList');
+  if(!fr.length){el.innerHTML='<div class="empty">Frigo vuoto.</div>';return;}
+  fr.sort((a,b)=>new Date(a.expDate)-new Date(b.expDate));
+  const now=Date.now();
+  el.innerHTML=fr.map(x=>{
+    const exp=new Date(x.expDate).getTime();
+    const daysLeft=Math.ceil((exp-now)/(1000*60*60*24));
+    const pctRemaining=(x.remainingMcg/x.totalMcg)*100;
+    let cls='',badge='';
+    if(daysLeft<0){cls='exp';badge='<span class="badge exp">SCADUTO</span>';}
+    else if(daysLeft<=5){cls='warn';badge=`<span class="badge warn">${daysLeft}g</span>`;}
+    else{badge=`<span class="badge frigo">${daysLeft}g</span>`;}
+    if(pctRemaining<20 && cls==='')cls='warn';
+    const remMcg=x.remainingMcg;
+    const remMg=(remMcg/1000).toFixed(3);
+    const dosi250=Math.floor(remMcg/250);
+    return `<div class="inv-item ${cls}">
+      <div class="name">${esc(x.name)} ${badge}</div>
+      <div class="info">
+        💧 <b>${x.mlAdded} ml</b> • 💊 <b>${x.mgPerVial} mg</b>/fiala<br>
+        📊 Conc: <b>${x.concMcgPerMl.toFixed(1)} mcg/ml</b><br>
+        📦 Residuo: <b>${remMcg.toFixed(0)} mcg</b> = <b>${remMg} mg</b><br>
+        🔢 Dosi 250 mcg: <b>~${dosi250}</b><br>
+        📅 Ricost: ${new Date(x.reconDate).toLocaleDateString('it-IT')}<br>
+        ⏰ Scade: ${new Date(x.expDate).toLocaleDateString('it-IT')}${daysLeft>=0?` (${daysLeft}g)`:''}
+        ${x.notes?'<br>📝 '+esc(x.notes):''}
+      </div>
+      <div class="progress ${cls}"><div style="width:${pctRemaining}%"></div></div>
+      <div class="actions">
+        <button class="small" onclick="openSomministra('${x.id}')">💉 Somm</button>
+        <button class="sec small" onclick="editFr('${x.id}')">✏️</button>
+        <button class="warn small" onclick="markFinished('${x.id}')">✅</button>
+        <button class="danger small" onclick="removeFr('${x.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editFr(id){
+  const fr=getFr();const x=fr.find(i=>i.id===id);if(!x) return;
+  const n=prompt('Note:',x.notes||'');if(n===null) return;
+  x.notes=n;setFr(fr);renderFr();
+}
+function markFinished(id){
+  const fr=getFr();const x=fr.find(i=>i.id===id);if(!x) return;
+  if(!confirm(`Segnare ${x.name} come finito?`)) return;
+  setFr(fr.filter(i=>i.id!==id));renderFr();
+}
+function removeFr(id){
+  const fr=getFr();const x=fr.find(i=>i.id===id);if(!x) return;
+  if(!confirm(`Eliminare ${x.name} dal frigo?`)) return;
+  setFr(fr.filter(i=>i.id!==id));renderFr();
+}
+
+function openSomministra(frId, preDose){
+  const fr=getFr();const x=fr.find(i=>i.id===frId);if(!x) return;
+  const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+  const nowStr=now.toISOString().slice(0,16);
+  const exp=new Date(x.expDate).getTime();
+  const daysLeft=Math.ceil((exp-Date.now())/(1000*60*60*24));
+  let warning='';
+  if(daysLeft<0) warning=`<div class="disc" style="background:#4a1a1a;border-color:#8b2a2a;color:#f0a0a0">⚠️ SCADUTO da ${Math.abs(daysLeft)} gg.</div>`;
+  else if(daysLeft<=5) warning=`<div class="disc">⚠️ Scade tra ${daysLeft} gg.</div>`;
+  const preDoseVal = preDose || '';
+  document.getElementById('modalBox').innerHTML=`
+    <button class="close" onclick="closeModal()">✕</button>
+    <div class="detail">
+      <h2>💉 Somministra ${esc(x.name)}</h2>
+      ${warning}
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+        Conc: <b style="color:var(--accent)">${x.concMcgPerMl.toFixed(1)} mcg/ml</b><br>
+        Residuo: <b style="color:var(--accent)">${x.remainingMcg.toFixed(0)} mcg</b> = <b style="color:var(--accent)">${(x.remainingMcg/1000).toFixed(3)} mg</b>
+      </p>
+      <label>Dose *</label>
+      <div style="display:flex;gap:6px">
+        <input id="s_dose" type="number" step="0.01" placeholder="es. 250" style="flex:2" value="${preDoseVal}" oninput="updatePreview('${x.id}')">
+        <select id="s_unit" style="flex:1" onchange="updatePreview('${x.id}')">
+          <option value="mcg">mcg</option><option value="mg">mg</option>
+        </select>
+      </div>
+      <div class="preview" id="s_preview"></div>
+      <label>Data e ora *</label><input id="s_datetime" type="datetime-local" value="${nowStr}">
+      <label>Sito</label>
+      <select id="s_site">
+        <option value="">--</option>
+        <option>Addome sx</option><option>Addome dx</option>
+        <option>Coscia sx</option><option>Coscia dx</option>
+        <option>Gluteo sx</option><option>Gluteo dx</option>
+        <option>Braccio sx</option><option>Braccio dx</option>
+        <option>SubQ altro</option><option>IM altro</option>
+        <option>Orale</option><option>Nasale</option><option>Topica</option>
+      </select>
+      <label>Note</label><textarea id="s_note" rows="2"></textarea>
+      <button style="margin-top:14px" onclick="saveSomministra('${frId}')">💉 Registra</button>
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+  if(preDoseVal) updatePreview(x.id);
+}
+
+function updatePreview(frId){
+  const fr=getFr();const x=fr.find(i=>i.id===frId);if(!x) return;
+  const dose=parseFloat(document.getElementById('s_dose').value);
+  const unit=document.getElementById('s_unit').value;
+  const prev=document.getElementById('s_preview');
+  if(!dose||dose<=0){prev.classList.remove('show');return;}
+  const doseMcg=unit==='mg'?dose*1000:dose;
+  const volumeMl=doseMcg/x.concMcgPerMl;
+  const unitsU100=volumeMl*100;
+  const nuovoResiduo=x.remainingMcg-doseMcg;
+  const pct=(nuovoResiduo/x.totalMcg)*100;
+  let alertTxt='';
+  if(nuovoResiduo<0){
+    alertTxt=`<div style="color:var(--danger);margin-top:6px">⚠️ Supera residuo! Max: ${x.remainingMcg.toFixed(0)} mcg</div>`;
+  } else if(pct<20){
+    alertTxt=`<div style="color:var(--warn);margin-top:6px">⚠️ Resterà solo ${pct.toFixed(0)}%</div>`;
+  }
+  prev.innerHTML=`
+    💉 Dose: <b>${doseMcg.toFixed(0)} mcg</b> = <b>${(doseMcg/1000).toFixed(3)} mg</b><br>
+    📏 Volume: <b>${volumeMl.toFixed(3)} ml</b><br>
+    🔢 U-100: <b>${unitsU100.toFixed(1)} unità</b><br>
+    📦 Residuo dopo: <b>${nuovoResiduo.toFixed(0)} mcg</b>
+    ${alertTxt}`;
+  prev.classList.add('show');
+}
+
+function saveSomministra(frId){
+  const fr=getFr();const x=fr.find(i=>i.id===frId);if(!x) return;
+  const dose=parseFloat(document.getElementById('s_dose').value);
+  const unit=document.getElementById('s_unit').value;
+  const datetime=document.getElementById('s_datetime').value;
+  const site=document.getElementById('s_site').value;
+  const note=document.getElementById('s_note').value.trim();
+  if(!dose||dose<=0){alert('Dose non valida');return;}
+  if(!datetime){alert('Data mancante');return;}
+  const doseMcg=unit==='mg'?dose*1000:dose;
+  if(doseMcg>x.remainingMcg){
+    if(!confirm(`Dose (${doseMcg} mcg) supera residuo (${x.remainingMcg} mcg). Continuare?`)) return;
+  }
+  const volumeMl=doseMcg/x.concMcgPerMl;
+  const unitsU100=volumeMl*100;
+  const dosi=getDosi();
+  dosi.push({id:uid(),frId:frId,name:x.name,doseMcg:doseMcg,doseInput:dose,unitInput:unit,
+    volumeMl:volumeMl,unitsU100:unitsU100,datetime:datetime,site:site,note:note,
+    createdAt:new Date().toISOString()});
+  setDosi(dosi);
+  x.remainingMcg-=doseMcg;
+  if(x.remainingMcg<=0){setFr(fr.filter(i=>i.id!==frId));}
+  else{setFr(fr);}
+  closeModal();showTab('dosi');
+  alert('✅ Registrata!');
+}
+
+function renderDosi(){
+  const dosi=getDosi();
+  const el=document.getElementById('dosiList');
+  if(!dosi.length){el.innerHTML='<div class="empty">Nessuna somministrazione.</div>';return;}
+  dosi.sort((a,b)=>b.datetime.localeCompare(a.datetime));
+  const totalDosi=dosi.length;
+  const last7=dosi.filter(d=>{
+    const diff=(Date.now()-new Date(d.datetime))/(1000*60*60*24);return diff<=7;
+  }).length;
+  const perPep={};
+  dosi.forEach(d=>{perPep[d.name]=(perPep[d.name]||0)+1});
+  const perPepStr=Object.entries(perPep).sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0;border-bottom:1px solid var(--border)"><span>${esc(k)}</span><span style="color:var(--accent)">${v}</span></div>`)
+    .join('');
+  el.innerHTML=`
+    <div class="card">
+      <h3 style="color:var(--accent);margin-bottom:8px">📊 Statistiche</h3>
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0"><span>Totale</span><span style="color:var(--accent)">${totalDosi}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0"><span>Ultimi 7gg</span><span style="color:var(--accent)">${last7}</span></div>
+      <h3 style="color:var(--accent2);font-size:.8rem;margin-top:12px;margin-bottom:6px">PER PEPTIDE</h3>
+      ${perPepStr}
+    </div>
+    <h3 style="color:var(--accent2);font-size:.85rem;margin:12px 0 8px;padding-left:4px">📜 STORICO</h3>
+    ${dosi.map(d=>{
+      const dt=new Date(d.datetime);
+      return `<div class="dose-item">
+        <div class="head">
+          <span class="name">${esc(d.name)}</span>
+          <span class="when">${dt.toLocaleDateString('it-IT')} ${dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+        <div class="detail">
+          💉 <b>${d.doseMcg.toFixed(0)} mcg</b> = <b>${(d.doseMcg/1000).toFixed(3)} mg</b>
+          • ${d.volumeMl.toFixed(3)} ml • ${d.unitsU100.toFixed(1)} U
+          ${d.site?'<br>📍 '+esc(d.site):''}
+          ${d.note?'<br>📝 '+esc(d.note):''}
+        </div>
+        <div class="actions"><button class="danger small" onclick="deleteDose('${d.id}')">🗑️</button></div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function deleteDose(id){
+  if(!confirm('Eliminare?')) return;
+  setDosi(getDosi().filter(d=>d.id!==id));renderDosi();
+}
+
+function renderProg(){
+  const prog=getProg();
+  const el=document.getElementById('progList');
+  if(!prog.length){el.innerHTML='<div class="empty">Nessuna programmazione.<br>Aggiungine una per ricevere i promemoria.</div>';return;}
+  const fasce={mattina:'🌅 Mattina',pomeriggio:'🌆 Pomeriggio',sera:'🌙 Sera'};
+  el.innerHTML=prog.map(p=>`
+    <div class="inv-item">
+      <div class="name">${esc(p.name)}</div>
+      <div class="info">
+        ${fasce[p.fascia]||p.fascia} • <b>${p.dose} ${p.unit}</b><br>
+        ${p.giorni==='tutti'?'Tutti i giorni':'Giorni: '+p.giorni}
+        ${p.note?'<br>📝 '+esc(p.note):''}
+      </div>
+      <div class="actions">
+        <button class="sec small" onclick="editProg('${p.id}')">✏️ Modifica</button>
+        <button class="danger small" onclick="removeProg('${p.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAddProg(){
+  const fr=getFr();
+  if(!fr.length){
+    alert('Prima devi ricostituire almeno un peptide nel frigo.');
+    return;
+  }
+  document.getElementById('modalBox').innerHTML=`
+    <button class="close" onclick="closeModal()">✕</button>
+    <div class="detail">
+      <h2>⏰ Nuova programmazione</h2>
+      <label>Peptide (dal frigo) *</label>
+      <select id="pr_fr">
+        ${fr.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}
+      </select>
+      <label>Fascia oraria *</label>
+      <select id="pr_fascia">
+        <option value="mattina">🌅 Mattina (a digiuno)</option>
+        <option value="pomeriggio">🌆 Pomeriggio</option>
+        <option value="sera">🌙 Sera</option>
+      </select>
+      <label>Dose *</label>
+      <div style="display:flex;gap:6px">
+        <input id="pr_dose" type="number" step="0.01" placeholder="es. 250" style="flex:2">
+        <select id="pr_unit" style="flex:1">
+          <option value="mcg">mcg</option><option value="mg">mg</option>
+        </select>
+      </div>
+      <label>Giorni</label>
+      <select id="pr_giorni">
+        <option value="tutti">Tutti i giorni</option>
+        <option value="lun-ven">Lun-Ven</option>
+        <option value="lun,mer,ven">Lun, Mer, Ven</option>
+        <option value="mar,gio,sab">Mar, Gio, Sab</option>
+      </select>
+      <label>Note</label><textarea id="pr_note" rows="2"></textarea>
+      <button style="margin-top:14px" onclick="saveProg()">💾 Salva</button>
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+function saveProg(){
+  const frId=document.getElementById('pr_fr').value;
+  const fr=getFr();const x=fr.find(i=>i.id===frId);
+  if(!x){alert('Peptide non trovato');return;}
+  const fascia=document.getElementById('pr_fascia').value;
+  const dose=parseFloat(document.getElementById('pr_dose').value);
+  const unit=document.getElementById('pr_unit').value;
+  const giorni=document.getElementById('pr_giorni').value;
+  const note=document.getElementById('pr_note').value.trim();
+  if(!dose||dose<=0){alert('Dose non valida');return;}
+  const prog=getProg();
+  prog.push({
+    id:uid(), frId:frId, name:x.name,
+    fascia:fascia, dose:dose, unit:unit, giorni:giorni, note:note,
+    createdAt:new Date().toISOString()
+  });
+  setProg(prog);
+  closeModal();renderProg();
+  alert('✅ Programmazione salvata!');
+}
+
+function editProg(id){
+  const prog=getProg();
+  const p=prog.find(x=>x.id===id);
+  if(!p) return;
+  const nuovaDose=prompt('Nuova dose ('+p.unit+'):',p.dose);
+  if(nuovaDose===null) return;
+  const d=parseFloat(nuovaDose);
+  if(!d||d<=0){alert('Dose non valida');return;}
+  p.dose=d;
+  setProg(prog);renderProg();
+}
+
+function removeProg(id){
+  if(!confirm('Eliminare questa programmazione?')) return;
+  setProg(getProg().filter(p=>p.id!==id));renderProg();
+}
+
+function getDosiDelGiorno(){
+  const prog=getProg();
+  if(!prog.length) return [];
+  const oggi=new Date();
+  const giornoSett=oggi.getDay();
+  const oggiKey=oggiStr();
+  const dosiOggi=getDosiOggi()[oggiKey] || {};
+  const fr=getFr();
+  
+  return prog.filter(p=>{
+    if(p.giorni==='tutti') return true;
+    if(p.giorni==='lun-ven') return giornoSett>=1 && giornoSett<=5;
+    if(p.giorni==='lun,mer,ven') return [1,3,5].includes(giornoSett);
+    if(p.giorni==='mar,gio,sab') return [2,4,6].includes(giornoSett);
+    return true;
+  }).map(p=>{
+    const fiala=fr.find(f=>f.id===p.frId);
+    return {
+      ...p,
+      fialaEsiste: !!fiala,
+      residuo:fiala?fiala.remainingMcg:0,
+      fatto: dosiOggi[p.id]===true
+    };
+  }).filter(p=>p.fialaEsiste);
+}
+
+function renderReminder(){
+  const dosi=getDosiDelGiorno();
+  const banner=document.getElementById('reminderBanner');
+  if(!dosi.length){banner.classList.remove('show');return;}
+  
+  const mattina=dosi.filter(d=>d.fascia==='mattina');
+  const pomeriggio=dosi.filter(d=>d.fascia==='pomeriggio');
+  const sera=dosi.filter(d=>d.fascia==='sera');
+  
+  let html=`<h3>📋 Promemoria di oggi</h3>`;
+  
+  if(mattina.length){
+    html+=`<div class="fascia">
+      <div class="fascia-title mattina">🌅 Mattina (a digiuno)</div>
+      ${mattina.map(d=>renderDoseRow(d)).join('')}
+    </div>`;
+  }
+  if(pomeriggio.length){
+    html+=`<div class="fascia">
+      <div class="fascia-title pome">🌆 Pomeriggio</div>
+      ${pomeriggio.map(d=>renderDoseRow(d)).join('')}
+    </div>`;
+  }
+  if(sera.length){
+    html+=`<div class="fascia">
+      <div class="fascia-title sera">🌙 Sera</div>
+      ${sera.map(d=>renderDoseRow(d)).join('')}
+    </div>`;
+  }
+  
+  banner.innerHTML=html;
+  banner.classList.add('show');
+}
+
+function renderDoseRow(d){
+  return `<div class="dose-row ${d.fatto?'done':''}">
+    <div class="info">
+      <div class="nome">${esc(d.name)}</div>
+      <div class="dose">${d.dose} ${d.unit} • Residuo: ${d.residuo.toFixed(0)} mcg</div>
+    </div>
+    ${d.fatto 
+      ? '<span style="color:var(--accent);font-size:.75rem">✓ Fatto</span>'
+      : `<button class="small" onclick="assumiDaBanner('${d.id}')">✓ Assunto</button>`
+    }
+  </div>`;
+}
+
+function assumiDaBanner(progId){
+  const prog=getProg();
+  const p=prog.find(x=>x.id===progId);
+  if(!p) return;
+  const fr=getFr();
+  const fiala=fr.find(f=>f.id===p.frId);
+  if(!fiala){alert('Fiala non trovata nel frigo');return;}
+  
+  const doseMcg = p.unit==='mg' ? p.dose*1000 : p.dose;
+  const volumeMl = doseMcg/fiala.concMcgPerMl;
+  const unitsU100 = volumeMl*100;
+  
+  const ok = confirm(
+    `Confermi somministrazione?\n\n` +
+    `${p.name}\n` +
+    `Dose: ${p.dose} ${p.unit} = ${doseMcg.toFixed(0)} mcg\n` +
+    `Volume: ${volumeMl.toFixed(3)} ml\n` +
+    `Siringa U-100: ${unitsU100.toFixed(1)} unità\n` +
+    `Residuo dopo: ${(fiala.remainingMcg-doseMcg).toFixed(0)} mcg`
+  );
+  if(!ok) return;
+  
+  const now=new Date();
+  const nowStr=now.toISOString().slice(0,16);
+  const dosi=getDosi();
+  dosi.push({
+    id:uid(), frId:p.frId, name:p.name,
+    doseMcg:doseMcg, doseInput:p.dose, unitInput:p.unit,
+    volumeMl:volumeMl, unitsU100:unitsU100,
+    datetime:nowStr, site:'', note:'Da promemoria',
+    createdAt:new Date().toISOString()
+  });
+  setDosi(dosi);
+  
+  fiala.remainingMcg -= doseMcg;
+  if(fiala.remainingMcg<=0){
+    setFr(fr.filter(i=>i.id!==p.frId));
+  } else {
+    setFr(fr);
+  }
+  
+  const oggiKey=oggiStr();
+  const dosiOggi=getDosiOggi();
+  if(!dosiOggi[oggiKey]) dosiOggi[oggiKey]={};
+  dosiOggi[oggiKey][p.id]=true;
+  setDosiOggi(dosiOggi);
+  
+  if(navigator.vibrate) navigator.vibrate(100);
+  
+  renderReminder();
+  alert('✅ Registrato!');
+}
+
+function mostraPopupSeNecessario(){
+  const dosi=getDosiDelGiorno();
+  const nonFatte=dosi.filter(d=>!d.fatto);
+  if(!nonFatte.length) return;
+  
+  if(navigator.vibrate) navigator.vibrate([200,100,200]);
+  
+  const mattina=nonFatte.filter(d=>d.fascia==='mattina');
+  const pomeriggio=nonFatte.filter(d=>d.fascia==='pomeriggio');
+  const sera=nonFatte.filter(d=>d.fascia==='sera');
+  
+  let html=`<h2>📋 Cosa assumere oggi</h2>`;
+  
+  const renderFascia=(titolo,classe,lista)=>{
+    if(!lista.length) return '';
+    return `<div style="margin-bottom:12px">
+      <div class="fascia-title ${classe}" style="font-size:.9rem;font-weight:600;margin-bottom:6px">${titolo}</div>
+      ${lista.map(d=>`<div style="background:var(--card2);padding:8px;border-radius:8px;margin-bottom:6px;font-size:.85rem">
+        <b>${esc(d.name)}</b> — ${d.dose} ${d.unit}
+      </div>`).join('')}
+    </div>`;
+  };
+  
+  html+=renderFascia('🌅 Mattina (a digiuno)','mattina',mattina);
+  html+=renderFascia('🌆 Pomeriggio','pome',pomeriggio);
+  html+=renderFascia('🌙 Sera','sera',sera);
+  
+  html+=`<button style="margin-top:12px" onclick="chiudiPopup()">Ho capito</button>`;
+  
+  document.getElementById('popupBox').innerHTML=html;
+  document.getElementById('popupOverlay').classList.add('show');
+}
+
+function chiudiPopup(){
+  document.getElementById('popupOverlay').classList.remove('show');
+}
+
+function showCalcMode(mode, btn){
+  ['ricost','converti','dosi','volume'].forEach(m=>{
+    document.getElementById('calc'+m.charAt(0).toUpperCase()+m.slice(1)).style.display=m===mode?'block':'none';
+  });
+  document.querySelectorAll('.calc-modes button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function calcRicost(){
+  const mg=parseFloat(document.getElementById('cr_mg').value);
+  const ml=parseFloat(document.getElementById('cr_ml').value);
+  const dose=parseFloat(document.getElementById('cr_dose').value);
+  const syr=parseFloat(document.getElementById('cr_syr').value);
+  const res=document.getElementById('cr_res');
+  if(!mg||!ml){res.classList.remove('show');return;}
+  const totalMcg=mg*1000;
+  const conc=totalMcg/ml;
+  let html=`
+    <div class="row"><span>Totale</span><span>${totalMcg.toFixed(0)} mcg = ${mg} mg</span></div>
+    <div class="row"><span>Concentrazione</span><span>${conc.toFixed(1)} mcg/ml</span></div>`;
+  if(dose&&dose>0){
+    const vol=dose/conc;
+    const units=vol*syr;
+    html+=`
+      <div class="row"><span>Volume</span><span class="big">${vol.toFixed(3)} ml</span></div>
+      <div class="row"><span>Siringa U-${syr}</span><span class="big">${units.toFixed(1)} unità</span></div>
+      <div class="row"><span>Dosi totali</span><span>~${Math.floor(totalMcg/dose)}</span></div>`;
+  }
+  res.innerHTML=html;res.classList.add('show');
+}
+
+function calcConverti(){
+  const val=parseFloat(document.getElementById('cv_val').value);
+  const from=document.getElementById('cv_from').value;
+  const conc=parseFloat(document.getElementById('cv_conc').value);
+  const res=document.getElementById('cv_res');
+  if(!val||val<=0){res.classList.remove('show');return;}
+  let mcg=0;
+  if(from==='mcg') mcg=val;
+  else if(from==='mg') mcg=val*1000;
+  else if(from==='g') mcg=val*1000000;
+  else if(from==='ml'){
+    if(!conc||conc<=0){res.innerHTML='Inserisci concentrazione.';res.classList.add('show');return;}
+    mcg=val*conc;
+  }
+  let html=`
+    <div class="row"><span>mcg</span><span>${mcg.toFixed(3)}</span></div>
+    <div class="row"><span>mg</span><span>${(mcg/1000).toFixed(6)}</span></div>`;
+  if(conc&&conc>0){
+    html+=`<div class="row"><span>ml</span><span>${(mcg/conc).toFixed(4)}</span></div>`;
+  }
+  res.innerHTML=html;res.classList.add('show');
+}
+
+function calcDosi(){
+  const mg=parseFloat(document.getElementById('cd_mg').value);
+  const dose=parseFloat(document.getElementById('cd_dose').value);
+  const freq=parseFloat(document.getElementById('cd_freq').value)||1;
+  const res=document.getElementById('cd_res');
+  if(!mg||!dose){res.classList.remove('show');return;}
+  const totalMcg=mg*1000;
+  const nDosi=Math.floor(totalMcg/dose);
+  const giorni=nDosi/freq;
+  res.innerHTML=`
+    <div class="row"><span>Numero dosi</span><span class="big">${nDosi}</span></div>
+    <div class="row"><span>Durata</span><span>${giorni.toFixed(1)} giorni</span></div>`;
+  res.classList.add('show');
+}
+
+function calcVolume(){
+  const conc=parseFloat(document.getElementById('cvol_conc').value);
+  const dose=parseFloat(document.getElementById('cvol_dose').value);
+  const syr=parseFloat(document.getElementById('cvol_syr').value);
+  const res=document.getElementById('cvol_res');
+  if(!conc||!dose){res.classList.remove('show');return;}
+  const vol=dose/conc;
+  const units=vol*syr;
+  res.innerHTML=`
+    <div class="row"><span>Volume</span><span class="big">${vol.toFixed(4)} ml</span></div>
+    <div class="row"><span>Siringa U-${syr}</span><span class="big">${units.toFixed(1)} unità</span></div>`;
+  res.classList.add('show');
+}
+
+const PUBMED_BASE = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
+
+function fillSciPepList(){
+  const dl=document.getElementById('sci_pep_list');
+  if(!dl) return;
+  dl.innerHTML = getDB().map(p=>`<option value="${esc(p.name)}">`).join('');
+}
+
+function searchPubMed(){
+  const pep=document.getElementById('sci_pep').value.trim();
+  const path=document.getElementById('sci_path').value.trim();
+  const results=document.getElementById('sci_results');
+  if(!pep && !path){
+    results.innerHTML='<div class="card"><p style="color:var(--warn)">Inserisci un peptide o una patologia.</p></div>';
+    return;
+  }
+  results.innerHTML='<div class="card"><p style="color:var(--muted)">🔍 Ricerca in corso...</p></div>';
+  let term;
+  if(pep && path) term=`${pep} AND ${path}`;
+  else if(pep) term=`${pep} AND peptide`;
+  else term=`${path} AND peptide therapy`;
+  const url=`${PUBMED_BASE}esearch.fcgi?db=pubmed&term=${encodeURIComponent(term)}&retmax=10&retmode=json&sort=relevance`;
+  fetch(url)
+    .then(r=>r.json())
+    .then(data=>{
+      const ids=data.esearchresult?.idlist||[];
+      if(ids.length===0){
+        results.innerHTML='<div class="card"><p style="color:var(--muted)">Nessun risultato.</p></div>';
+        return;
+      }
+      return fetch(`${PUBMED_BASE}esummary.fcgi?db=pubmed&id=${ids.join(',')}&retmode=json`)
+        .then(r=>r.json())
+        .then(summary=>{
+          const articles=ids.map(id=>{
+            const a=summary.result[id];
+            if(!a) return null;
+            return {
+              id:id,
+              title:a.title||'Senza titolo',
+              authors:a.authors?a.authors.slice(0,3).map(au=>au.name).join(', '):'',
+              journal:a.fulljournalname||a.source||'',
+              year:a.pubdate?a.pubdate.split(' ')[0]:'',
+              url:`https://pubmed.ncbi.nlm.nih.gov/${id}/`
+            };
+          }).filter(Boolean);
+          results.innerHTML=`
+            <div class="card">
+              <h3 style="color:var(--accent);margin-bottom:10px">📚 Risultati (${articles.length})</h3>
+              ${articles.map(a=>`
+                <a href="${a.url}" target="_blank" rel="noopener" class="pep-item" style="border-left-color:var(--accent)">
+                  <div class="name" style="font-size:.85rem;line-height:1.3">${esc(a.title)}</div>
+                  <div class="short">${esc(a.authors)} — ${esc(a.journal)} (${a.year})</div>
+                </a>
+              `).join('')}
+            </div>`;
+        });
+    })
+    .catch(err=>{
+      results.innerHTML=`<div class="card"><p style="color:var(--danger)">❌ Errore: ${esc(err.message)}</p></div>`;
+    });
+}
+
+function openScholar(){
+  const pep=document.getElementById('sci_pep').value.trim();
+  const path=document.getElementById('sci_path').value.trim();
+  const q=[pep,path,'peptide'].filter(Boolean).join(' ');
+  if(!q){alert('Inserisci un peptide o una patologia');return;}
+  const url=`https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`;
+  window.open(url, '_blank');
+}
+
+function exportData(){
+  const data={version:6,exportedAt:new Date().toISOString(),
+    custom:getCustom(),inventory:getInv(),fridge:getFr(),dosi:getDosi(),
+    prog:getProg(),dosiOggi:getDosiOggi()};
+  const json=JSON.stringify(data,null,2);
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(json).then(()=>{
+      alert('✅ Backup copiato!');
+    }).catch(()=>{prompt('Copia manualmente:',json)});
+  } else {prompt('Copia manualmente:',json);}
+}
+
+function importData(){
+  const txt=document.getElementById('importArea').value.trim();
+  if(!txt){alert('Incolla il backup');return;}
+  try{
+    const data=JSON.parse(txt);
+    if(!confirm('Importare? Sostituisce i dati.')) return;
+    if(data.custom) setCustom(data.custom);
+    if(data.inventory) setInv(data.inventory);
+    if(data.fridge) setFr(data.fridge);
+    if(data.dosi) setDosi(data.dosi);
+    if(data.prog) setProg(data.prog);
+    if(data.dosiOggi) setDosiOggi(data.dosiOggi);
+    alert('✅ Importato!');renderDb();
+    document.getElementById('importArea').value='';
+  }catch(e){alert('❌ JSON non valido: '+e.message);}
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+renderDb();
+renderReminder();
+setTimeout(mostraPopupSeNecessario, 500);
+</script>
+
+</body>
+</html>
